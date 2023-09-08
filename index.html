@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script type="text/javascript" src="/smoothie.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <title>Document</title>
+  </head>
+  <body>
+    <div>
+      <canvas id="mycanvas" width="400" height="100"></canvas>
+    </div>
+  </body>
+</html>
+<script>
+  const socket = io()
+
+  var smoothie = new SmoothieChart();
+  smoothie.streamTo(document.getElementById("mycanvas"));
+
+  // Data
+  var line1 = new TimeSeries();
+  var line2 = new TimeSeries();
+
+  // Add a random value to each line every second
+  // setInterval(function () {
+  //   line1.append(Date.now(), Math.random());
+  //   line2.append(Date.now(), Math.random());
+  // }, 1000);
+
+  socket.on('graph new data', function(data) {
+    console.log('graph new data event occured time: '+data.time+' value: '+data.value);
+    line1.append(data.time, data.value);
+  })
+
+  
+  var smoothie = new SmoothieChart({
+    grid: {
+      strokeStyle: "rgb(125, 0, 0)",
+      fillStyle: "rgb(60, 0, 0)",
+      lineWidth: 1,
+      millisPerLine: 250,
+      verticalSections: 6,
+    },
+    labels: { fillStyle: "rgb(60, 0, 0)" },
+  });
+  smoothie.addTimeSeries(line1, {
+    strokeStyle: "rgb(0, 255, 0)",
+    fillStyle: "rgba(0, 255, 0, 0.4)",
+    lineWidth: 3,
+  });
+  // smoothie.addTimeSeries(line2, {
+  //   strokeStyle: "rgb(255, 0, 255)",
+  //   fillStyle: "rgba(255, 0, 255, 0.3)",
+  //   lineWidth: 3,
+  // });
+  smoothie.streamTo(document.getElementById("mycanvas"), 1000 /*delay*/);
+</script>
