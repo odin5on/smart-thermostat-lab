@@ -12,7 +12,7 @@ const smoothie = require('smoothie')
 const { SerialPort, ReadlineParser } = require('serialport');
 
 // Configure the serial port
-const port = new SerialPort({port: '/dev/cu.usbmodem14101', baudRate: 9600, path: '/dev/cu.usbmodem14101', autoOpen: true}); // Replace 'COMX' with your Arduino's serial port
+const port = new SerialPort({port: '/dev/cu.usbmodem142301', baudRate: 9600, path: '/dev/cu.usbmodem142301', autoOpen: true}); // Replace 'COMX' with your Arduino's serial port
 
 // Create a parser to read lines from the Arduino
 const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
@@ -26,6 +26,15 @@ app.get('/', (req, res) => {
 server.listen(3000, () => {
   console.log('listening on *:3000');
 });
+
+io.on('connection', (socket) => {
+  socket.on('action1', () => {
+    console.log('action1 button pressed');
+  });
+  socket.on('action2', () => {
+    console.log('action2 button pressed');
+  });
+})
 
 port.on('open', () => {
   console.log('A device connected');

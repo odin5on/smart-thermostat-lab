@@ -9,23 +9,39 @@
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body>
-    <div className="flex bg-slate-100">
-      <canvas id="mycanvas" width="400" height="100"></canvas>
-      <h1 class="text-3xl font-bold underline">
-        Hello world!
-      </h1>
+    <div
+      class="flex flex-col justify-center items-center border-solid border-4 border-red-400"
+    >
+      <div class="border-solid border-8 rounded-md border-slate-400 m-4">
+        <div
+          id="box"
+          class="resize overflow-auto "
+        >
+          <canvas id="mycanvas" width="1366" height="768"></canvas>
+        </div>
+      </div>
+      <div class="flex flex-row justify-around w-full">
+        <div>
+          <button class="bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded" onclick="action1()">action 1</button>
+          <button class="bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded" onclick="action2()">action 2</button>
+        </div>
+        <div>
+          <p id="temperature" class="inline-block"></p>
+          <button class="inline-block bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded">C</button>
+          
+        </div>
+      </div>
+      <h1 class="text-3xl font-bold underline bg-red-500">Hello world!</h1>
     </div>
   </body>
 </html>
 <script>
-  const socket = io()
+  const socket = io();
 
   var smoothie = new SmoothieChart();
-  smoothie.streamTo(document.getElementById("mycanvas"));
 
   // Data
   var line1 = new TimeSeries();
-  var line2 = new TimeSeries();
 
   // Add a random value to each line every second
   // setInterval(function () {
@@ -33,31 +49,59 @@
   //   line2.append(Date.now(), Math.random());
   // }, 1000);
 
-  socket.on('graph new data', function(data) {
-    console.log('graph new data event occured time: '+data.time+' value: '+data.value);
+  socket.on("graph new data", function (data) {
+    // console.log(
+    //   "graph new data event occured time: " +
+    //     data.time +
+    //     " value: " +
+    //     data.value
+    // );
+    document.getElementById("temperature").innerHTML = "Temp: " + data.value;
     line1.append(data.time, data.value);
-  })
+  });
 
-  
   var smoothie = new SmoothieChart({
+    maxValueScale: 0.88,
+    minValueScale: 0.8,
     grid: {
-      strokeStyle: "rgb(125, 0, 0)",
-      fillStyle: "rgb(60, 0, 0)",
-      lineWidth: 1,
-      millisPerLine: 250,
-      verticalSections: 6,
+      fillStyle: "#ffffff",
+      strokeStyle: "#f7f7f7",
+      verticalSections: 20,
     },
-    labels: { fillStyle: "rgb(60, 0, 0)" },
+    labels: {
+      fillStyle: "#000000",
+      precision: 3,
+      showIntermediateLabels: true,
+    },
+    tooltipLine: { strokeStyle: "#bbbbbb" },
+    maxValue: 100,
+    minValue: 0,
   });
   smoothie.addTimeSeries(line1, {
-    strokeStyle: "rgb(0, 255, 0)",
-    fillStyle: "rgba(0, 255, 0, 0.4)",
-    lineWidth: 3,
+    lineWidth: 2,
+    strokeStyle: "#5395c0",
+    fillStyle: "rgba(83,149,192,0.20)",
+    interpolation: "bezier",
   });
-  // smoothie.addTimeSeries(line2, {
-  //   strokeStyle: "rgb(255, 0, 255)",
-  //   fillStyle: "rgba(255, 0, 255, 0.3)",
-  //   lineWidth: 3,
-  // });
+
   smoothie.streamTo(document.getElementById("mycanvas"), 1000 /*delay*/);
+
+  elem = document.getElementById("box");
+
+  let resizeObserver = new ResizeObserver((target) => {
+    let canvas = document.getElementById("mycanvas");
+    let box = document.getElementById("box");
+    canvas.style.width = box.style.width;
+    canvas.style.height = box.style.height;
+  });
+
+  resizeObserver.observe(elem);
+
+  function action1(){
+    console.log('action1');
+    socket.emit('action1');
+  }
+  function action2(){
+    socket.emit('action2');
+  }
 </script>
