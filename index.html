@@ -9,29 +9,38 @@
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body>
-    <div
-      class="flex flex-col justify-center items-center border-solid border-4 border-red-400"
-    >
+    <div class="flex flex-col justify-center items-center">
       <div class="border-solid border-8 rounded-md border-slate-400 m-4">
-        <div
-          id="box"
-          class="resize overflow-auto "
-        >
+        <div id="box" class="resize overflow-auto">
           <canvas id="mycanvas" width="1366" height="768"></canvas>
         </div>
       </div>
       <div class="flex flex-row justify-around w-full">
         <div>
-          <button class="bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded" onclick="action1()">action 1</button>
-          <button class="bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded" onclick="action2()">action 2</button>
+          <button
+            class="bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded"
+            onclick="action1()"
+          >
+            action 1
+          </button>
+          <button
+            class="bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded"
+            onclick="action2()"
+          >
+            action 2
+          </button>
         </div>
         <div>
           <p id="temperature" class="inline-block"></p>
-          <button class="inline-block bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded">C</button>
-          
+          <button
+            id="temptoggle"
+            class="inline-block bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded"
+            onclick="toggleCandF()"
+          >
+            *C
+          </button>
         </div>
       </div>
-      <h1 class="text-3xl font-bold underline bg-red-500">Hello world!</h1>
     </div>
   </body>
 </html>
@@ -41,11 +50,12 @@
   var smoothie = new SmoothieChart();
 
   // Data
-  var line1 = new TimeSeries();
+  var celciusgraph = new TimeSeries();
+  var fahrenheitgraph = new TimeSeries();
 
   // Add a random value to each line every second
   // setInterval(function () {
-  //   line1.append(Date.now(), Math.random());
+  //   celciusgraph.append(Date.now(), Math.random());
   //   line2.append(Date.now(), Math.random());
   // }, 1000);
 
@@ -56,8 +66,14 @@
     //     " value: " +
     //     data.value
     // );
-    document.getElementById("temperature").innerHTML = "Temp: " + data.value;
-    line1.append(data.time, data.value);
+    if (celciusgraph.disabled) {
+      document.getElementById("temperature").innerHTML =
+        "Temp: " + ((data.value * 9) / 5 + 32);
+    } else {
+      document.getElementById("temperature").innerHTML = "Temp: " + data.value;
+    }
+    celciusgraph.append(data.time, data.value);
+    fahrenheitgraph.append(data.time, (data.value * 9) / 5 + 32);
   });
 
   var smoothie = new SmoothieChart({
@@ -77,12 +93,19 @@
     maxValue: 100,
     minValue: 0,
   });
-  smoothie.addTimeSeries(line1, {
+  smoothie.addTimeSeries(celciusgraph, {
     lineWidth: 2,
     strokeStyle: "#5395c0",
     fillStyle: "rgba(83,149,192,0.20)",
     interpolation: "bezier",
   });
+  smoothie.addTimeSeries(fahrenheitgraph, {
+    lineWidth: 2,
+    strokeStyle: "#5395c0",
+    fillStyle: "rgba(83,149,192,0.20)",
+    interpolation: "bezier",
+  });
+  fahrenheitgraph.disabled = true;
 
   smoothie.streamTo(document.getElementById("mycanvas"), 1000 /*delay*/);
 
@@ -97,11 +120,23 @@
 
   resizeObserver.observe(elem);
 
-  function action1(){
-    console.log('action1');
-    socket.emit('action1');
+  function action1() {
+    console.log("action1");
+    socket.emit("action1");
   }
-  function action2(){
-    socket.emit('action2');
+  function action2() {
+    socket.emit("action2");
+  }
+
+  function toggleCandF() {
+    if (celciusgraph.disabled == false) {
+      celciusgraph.disabled = true;
+      fahrenheitgraph.disabled = false;
+      document.getElementById("temptoggle").innerHTML = "*F";
+    } else {
+      celciusgraph.disabled = false;
+      fahrenheitgraph.disabled = true;
+      document.getElementById("temptoggle").innerHTML = "*C";
+    }
   }
 </script>
