@@ -10,12 +10,13 @@
   </head>
   <body>
     <div class="flex flex-col justify-center items-center">
-      <div class="border-solid border-8 rounded-md border-slate-400 m-4">
+      <div class="border-solid border-8 rounded-md border-slate-400 m-2">
         <div id="box" class="resize overflow-auto">
-          <canvas id="mycanvas" width="1366" height="768"></canvas>
+          <canvas id="celciuscanvas" width="1000" height="500"></canvas>
+          <canvas id="fahrenheitcanvas" width="1000" height="500" class="hidden"></canvas>
         </div>
       </div>
-      <div class="flex flex-row justify-around w-full">
+      <div class="flex flex-row justify-evenly w-full">
         <div>
           <button
             class="bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded"
@@ -31,7 +32,10 @@
           </button>
         </div>
         <div>
-          <p id="temperature" class="inline-block"></p>
+          <p
+            id="temperature"
+            class="inline-block tabular-nums font-mono font-medium text-base mr-4"
+          ></p>
           <button
             id="temptoggle"
             class="inline-block bg-slate-500 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded"
@@ -41,32 +45,42 @@
           </button>
         </div>
       </div>
+      <div
+        id="notification"
+        class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4"
+        role="alert"
+      >
+        <strong class="font-bold">Holy smokes!</strong>
+        <span class="block sm:inline mr-8"
+          >Something seriously bad happened.</span
+        >
+        <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+          <svg
+            class="fill-current h-6 w-6 text-red-500"
+            role="button"
+            onclick="closealert()"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+          >
+            <title>Close</title>
+            <path
+              d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"
+            />
+          </svg>
+        </span>
+      </div>
     </div>
   </body>
 </html>
 <script>
   const socket = io();
 
-  var smoothie = new SmoothieChart();
-
   // Data
   var celciusgraph = new TimeSeries();
   var fahrenheitgraph = new TimeSeries();
 
-  // Add a random value to each line every second
-  // setInterval(function () {
-  //   celciusgraph.append(Date.now(), Math.random());
-  //   line2.append(Date.now(), Math.random());
-  // }, 1000);
-
   socket.on("graph new data", function (data) {
-    // console.log(
-    //   "graph new data event occured time: " +
-    //     data.time +
-    //     " value: " +
-    //     data.value
-    // );
-    if (celciusgraph.disabled) {
+    if (!celcius) {
       document.getElementById("temperature").innerHTML =
         "Temp: " + ((data.value * 9) / 5 + 32);
     } else {
@@ -76,50 +90,81 @@
     fahrenheitgraph.append(data.time, (data.value * 9) / 5 + 32);
   });
 
-  var smoothie = new SmoothieChart({
-    maxValueScale: 0.88,
-    minValueScale: 0.8,
+  var celciussmoothie = new SmoothieChart({
+    maxValueScale: 1,
+    minValueScale: 0,
     grid: {
       fillStyle: "#ffffff",
       strokeStyle: "#f7f7f7",
       verticalSections: 20,
+      millisPerLine: 9000
     },
     labels: {
       fillStyle: "#000000",
-      precision: 3,
+      precision: 2,
       showIntermediateLabels: true,
     },
     tooltipLine: { strokeStyle: "#bbbbbb" },
-    maxValue: 100,
-    minValue: 0,
+    maxValue: 50,
+    minValue: 10,
+    timestampFormatter: timeformat,
+    millisPerPixel: 300, //223 the correct value to go here
   });
-  smoothie.addTimeSeries(celciusgraph, {
-    lineWidth: 2,
-    strokeStyle: "#5395c0",
-    fillStyle: "rgba(83,149,192,0.20)",
-    interpolation: "bezier",
-  });
-  smoothie.addTimeSeries(fahrenheitgraph, {
-    lineWidth: 2,
-    strokeStyle: "#5395c0",
-    fillStyle: "rgba(83,149,192,0.20)",
-    interpolation: "bezier",
-  });
-  fahrenheitgraph.disabled = true;
 
-  smoothie.streamTo(document.getElementById("mycanvas"), 1000 /*delay*/);
+  celciussmoothie.addTimeSeries(celciusgraph, {
+    lineWidth: 2,
+    strokeStyle: "#5395c0",
+    fillStyle: "rgba(83,149,192,0.20)",
+    interpolation: "bezier",
+  });
+
+  var fahrenheitsmoothie = new SmoothieChart({
+    maxValueScale: 1,
+    minValueScale: 0,
+    grid: {
+      fillStyle: "#ffffff",
+      strokeStyle: "#f7f7f7",
+      verticalSections: 20,
+      millisPerLine: 9000
+    },
+    labels: {
+      fillStyle: "#000000",
+      precision: 2,
+      showIntermediateLabels: true,
+    },
+    tooltipLine: { strokeStyle: "#bbbbbb" },
+    maxValue: 122,
+    minValue: 50,
+    timestampFormatter: timeformat,
+    millisPerPixel: 300, //223 the correct value to go here
+  });
+
+  fahrenheitsmoothie.addTimeSeries(fahrenheitgraph, {
+    lineWidth: 2,
+    strokeStyle: "#5395c0",
+    fillStyle: "rgba(83,149,192,0.20)",
+    interpolation: "bezier",
+  });
+
+  var celcius = true;
+  
+  celciussmoothie.streamTo(document.getElementById("celciuscanvas"), 1000 /*delay*/);
+  fahrenheitsmoothie.streamTo(document.getElementById("fahrenheitcanvas"), 1000 /*delay*/);
+  
+  let resizeObserver = new ResizeObserver((target) => {
+    let celciuscanvas = document.getElementById("celciuscanvas");
+    let fahrenheitcanvas = document.getElementById("fahrenheitcanvas");
+    let box = document.getElementById("box");
+    celciuscanvas.width = box.offsetWidth;
+    celciuscanvas.height = box.offsetHeight;
+    fahrenheitcanvas.width = box.offsetWidth;
+    fahrenheitcanvas.height = box.offsetHeight;
+  });
 
   elem = document.getElementById("box");
-
-  let resizeObserver = new ResizeObserver((target) => {
-    let canvas = document.getElementById("mycanvas");
-    let box = document.getElementById("box");
-    canvas.style.width = box.style.width;
-    canvas.style.height = box.style.height;
-  });
-
+  
   resizeObserver.observe(elem);
-
+  
   function action1() {
     console.log("action1");
     socket.emit("action1");
@@ -127,16 +172,29 @@
   function action2() {
     socket.emit("action2");
   }
-
+  
   function toggleCandF() {
-    if (celciusgraph.disabled == false) {
-      celciusgraph.disabled = true;
-      fahrenheitgraph.disabled = false;
+    celciuscanvas = document.getElementById("celciuscanvas");
+    fahrenheitcanvas = document.getElementById("fahrenheitcanvas");
+    if (celcius) {
       document.getElementById("temptoggle").innerHTML = "*F";
+      celciuscanvas.classList.add('hidden');
+      fahrenheitcanvas.classList.remove('hidden');
+      celcius = false;
     } else {
-      celciusgraph.disabled = false;
-      fahrenheitgraph.disabled = true;
       document.getElementById("temptoggle").innerHTML = "*C";
+      celciuscanvas.classList.remove('hidden');
+      fahrenheitcanvas.classList.add('hidden');
+      celcius = true;
     }
+  }
+  
+  function closealert() {
+    document.getElementById("notification").classList.add("invisible");
+    console.log("button clicked");
+  }
+  
+  function timeformat(date){
+    return Math.round(((Date.now()-date)/1000),0)+1;
   }
 </script>
